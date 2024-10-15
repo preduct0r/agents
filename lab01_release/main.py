@@ -2,6 +2,7 @@ from typing import Dict, List
 from autogen import ConversableAgent
 import sys
 import os
+import json
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -31,6 +32,16 @@ def fetch_restaurant_data(restaurant_name: str) -> Dict[str, List[str]]:
     # > fetch_restaurant_data("Applebee's")
     # {"Applebee's": ["The food at Applebee's was average, with nothing particularly standing out.", ...]}
     return review_dict[restaurant_name]
+
+def check_task1_termination(message):
+    if "content" in message:
+        try:
+            d = json.loads(message["content"])
+            if len(d.keys()) == 1 and isinstance(d[d.keys()[0]], list):
+                return True
+        except:
+            return False
+    return False
         
 
 def calculate_overall_score(restaurant_name: str, food_scores: List[int], customer_service_scores: List[int]) -> Dict[str, float]:
@@ -57,12 +68,13 @@ def get_data_fetch_agent_prompt(restaurant_query: str) -> str:
 
 # Do not modify the signature of the "main" function.
 def main(user_query: str):
-    entrypoint_agent_system_message = "" # TODO
+    entrypoint_agent_system_message = "You are an agent who's purpose to retrieve all reviews about specific restaurant name you provided" # TODO
     # example LLM config for the entrypoint agent
     llm_config = {"config_list": [{"model": "gpt-4o-mini", "api_key": os.environ.get("OPENAI_API_KEY")}]}
     # the main entrypoint/supervisor agent
     entrypoint_agent = ConversableAgent("entrypoint_agent", 
                                         system_message=entrypoint_agent_system_message, 
+                                        is_termination_msg=check_task1_termination,
                                         llm_config=llm_config)
     entrypoint_agent.register_for_llm(name="fetch_restaurant_data", description="Fetches the reviews for a specific restaurant.")(fetch_restaurant_data)
     entrypoint_agent.register_for_execution(name="fetch_restaurant_data")(fetch_restaurant_data)
