@@ -9,7 +9,18 @@ load_dotenv()
 
 # Accessing the variables
 openai_token = os.getenv('OPENAI_API_KEY')
-print(openai_token) 
+
+with open("lab01_release/restaurant-data.txt") as f:
+        reviews = f.read().split("\n")
+review_dict = {}
+for review in reviews:
+    rest_name = review.split(".")[0].lower()
+    text = review.replace(review.split(".")[0] + ".", "")
+    if rest_name in review_dict:
+        review_dict[rest_name].append(text)
+    else:
+        review_dict[rest_name] = [text]
+
 
 def fetch_restaurant_data(restaurant_name: str) -> Dict[str, List[str]]:
     # TODO
@@ -19,8 +30,8 @@ def fetch_restaurant_data(restaurant_name: str) -> Dict[str, List[str]]:
     # Example:
     # > fetch_restaurant_data("Applebee's")
     # {"Applebee's": ["The food at Applebee's was average, with nothing particularly standing out.", ...]}
-    pass
-
+    return review_dict[restaurant_name]
+        
 
 def calculate_overall_score(restaurant_name: str, food_scores: List[int], customer_service_scores: List[int]) -> Dict[str, float]:
     # TODO
