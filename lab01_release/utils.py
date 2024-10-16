@@ -1,3 +1,6 @@
+import re
+
+
 review_analysis_message = """
 Given a list of reviews your task is to extract two scores:
 ```
@@ -14,14 +17,10 @@ Make this scores look for keywords in the reviews. Each review has keyword adjec
 ```
 Each review will have exactly only two of these keywords (adjective describing food and adjective describing customer service), and the score N is only determined through the above listed keywords. No other factors go into score extraction.
 
-Return answer in format, like in this example
+Return answer in format, like in this example. It must be strictly JSON data without anything else
 ```
 {"restaurant_name": "Applebee's", "food_scores": [1, 2, 3, 4, 5], "customer_service_scores": [1, 2, 3, 4, 5]}
 ```
-"""
-
-scoring_system_message = """
-You are an agent who's purpose to return overall score based on provided scores 
 """
 
 
@@ -37,3 +36,8 @@ def get_review_dict():
         else:
             review_dict[rest_name] = [text]
     return review_dict
+
+def extract_content(text):
+    pattern2 = r"^.*?(\{.*\}).*$"
+    match = re.search(pattern2, text, re.DOTALL)
+    return match.group(1) if match else text

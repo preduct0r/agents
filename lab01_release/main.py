@@ -10,7 +10,7 @@ from autogen import register_function
 
 import sys
 sys.path.append("/home/den/projects/LLM/llm_agents_course/labs")
-from lab01_release.utils import review_analysis_message, get_review_dict
+from lab01_release.utils import review_analysis_message, get_review_dict, extract_content
 
 # Load environment variables from .env file
 load_dotenv()
@@ -34,17 +34,6 @@ def fetch_restaurant_data(restaurant_name: str) -> Dict[str, List[str]]:
         return review_dict[restaurant_name.strip().lower()]
     else:
         raise ValueError("Invalid operator")
-    
-
-def check_task1_termination(message):
-    if "content" in message:
-        try:
-            d = json.loads(message["content"])
-            if len(d.keys()) == 1 and isinstance(d[d.keys()[0]], list):
-                return True
-        except:
-            return False
-    return False
         
 
 def calculate_overall_score(restaurant_name: str, food_scores: List[int], customer_service_scores: List[int]) -> Dict[str, float]:
@@ -62,12 +51,10 @@ def calculate_overall_score(restaurant_name: str, food_scores: List[int], custom
     
     return {restaurant_name: round(average_score, 3)}
 
-def get_data_fetch_agent_prompt(restaurant_query: str) -> str:
-    # TODO
-    # It may help to organize messages/prompts within a function which returns a string. 
-    # For example, you could use this function to return a prompt for the data fetch agent 
-    # to use to fetch reviews for a specific restaurant.
-    pass
+def get_average_score(js: str):
+    json.loads(extract_content(js))
+    return calculate_overall_score(js["restaurant_name"], js["food_scores"], js["customer_service_scores"])
+
 
 # TODO: feel free to write as many additional functions as you'd like.
 
@@ -116,10 +103,31 @@ def main(user_query: str):
     
     #############
     reviews_analysis_agent = AssistantAgent("review_analysis_agent", 
-                                        system_message="You are a helpful AI assistant. You help to analyze reviews",
-                                        llm_config=llm_config,
-                                        max_consecutive_auto_reply=2)
+        system_message="You are a helpful AI assistant. You help to analyze reviews",
+        llm_config=llm_config,
+    )
     
+    #############
+    scoring_agent = AssistantAgent("scoring_agent", 
+        system_message="You are a helpful AI assistant", 
+        llm_config=llm_config,
+    )
+    
+    register_function(
+        calculate_overall_score,
+        caller=scoring_agent,  # The assistant agent can suggest calls to the calculator.
+        executor=user_proxy,  # The user proxy agent can execute the calculator calls.
+        name="average_score",  # By default, the function name is used as the tool name.
+        description="get final score",  # A description of the tool.
+    )
+    
+    
+    
+    # TODO
+    # Fill in the argument to `initiate_chats` below, calling the correct agents sequentially.
+    # If you decide to use another conversation pattern, feel free to disregard this code.
+    
+    # Uncomment once you initiate the chat with at least one agent.
     #############
     chat_results = user_proxy.initiate_chats([
             {
@@ -139,48 +147,16 @@ def main(user_query: str):
                 "recipient": reviews_analysis_agent,
                 "summary_method": "last_msg",
                 "max_turns": 2,
-            }                          
+            },
+            {
+                "message": "Return average score. Strictly in JSON format",
+                "recipient": scoring_agent,
+                "summary_method": "last_msg",
+                "max_turns": 2,
+            }                             
         ]                                         
     )
     print()
-    
-    # scoring_agent = AssistantAgent("scoring_agent", 
-    #                                     system_message=None, 
-    #                                     llm_config=llm_config,
-    #                                     max_consecutive_auto_reply=2)
-    
-    # scoring_agent.register_for_llm(name="calculate_overall_score", description="Return overall score.")(calculate_overall_score)
-    # scoring_agent.register_for_execution(name="calculate_overall_score")(calculate_overall_score)
-    
-    
-    
-    # TODO
-    # Fill in the argument to `initiate_chats` below, calling the correct agents sequentially.
-    # If you decide to use another conversation pattern, feel free to disregard this code.
-    
-    # Uncomment once you initiate the chat with at least one agent.
-    # chat_results = retrieve_name_agent.initiate_chats(
-    #     [
-    #         {
-    #             "recipient": fetch_reviews_agent,
-    #             "message": "Return a name of restaurant from query in lowercase",
-    #             "max_turns": 3,
-    #             "summary_method": "last_msg",
-    #         },
-    #         {
-    #             "recipient": review_analysis_agent,
-    #             "message": "Return a list of reviews for a this restaurant",
-    #             "max_turns": 3,
-    #             "summary_method": "reflection_with_llm",
-    #         },
-            # {
-            #     "recipient": scoring_agent,
-            #     "message": "Make an average score",
-            #     "max_turns": 3,
-            #     "summary_method": "last_msg",
-            # },
-    #     ]
-    # )
     
     
 # DO NOT modify this code below.
