@@ -10,13 +10,16 @@ from autogen import register_function
 
 import sys
 sys.path.append("/home/den/projects/LLM/llm_agents_course/labs")
-from lab01_release.utils import entrypoint_agent_system_message, review_analysis_system_message, get_review_dict
+from lab01_release.utils import review_analysis_message, get_review_dict
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Accessing the variables
 openai_token = os.getenv('OPENAI_API_KEY')
+
+review_dict = get_review_dict()
+
 
 
 def fetch_restaurant_data(restaurant_name: str) -> Dict[str, List[str]]:
@@ -26,10 +29,7 @@ def fetch_restaurant_data(restaurant_name: str) -> Dict[str, List[str]]:
     # The "data fetch agent" should have access to this function signature, and it should be able to suggest this as a function call. 
     # Example:
     # > fetch_restaurant_data("Applebee's")
-    # {"Applebee's": ["The food at Applebee's was average, with nothing particularly standing out.", ...]}
-    review_dict = get_review_dict()
-    print(restaurant_name.strip().lower())
-    
+    # {"Applebee's": ["The food at Applebee's was average, with nothing particularly standing out.", ...]}    
     if restaurant_name.lower() in review_dict.keys():
         return review_dict[restaurant_name.strip().lower()]
     else:
@@ -93,17 +93,17 @@ def main(user_query: str):
         # is_termination_msg=lambda msg: msg.get("content") is not None and "TERMINATE" in msg["content"],
         human_input_mode="NEVER",
     )
-    retrieve_name_agent = ConversableAgent(
+    retrieve_name_agent = AssistantAgent(
         name="get_name_agent",
         system_message="You are a helpful AI assistant. You help to retrieve necessary information from given query",
         llm_config=llm_config,
     )
     
     #############
-    retrieve_reviews_agent = ConversableAgent(
+    retrieve_reviews_agent = AssistantAgent(
         name="get_reviews_agent",
         system_message="You are a helpful AI assistant. You help with tool usage",
-        llm_config={"config_list": [{"model": "gpt-4", "api_key": os.environ["OPENAI_API_KEY"]}]},
+        llm_config=llm_config,
     )
     
     register_function(
@@ -113,6 +113,12 @@ def main(user_query: str):
         name="retrieval",  # By default, the function name is used as the tool name.
         description="get data from dictionary",  # A description of the tool.
     )
+    
+    #############
+    reviews_analysis_agent = AssistantAgent("review_analysis_agent", 
+                                        system_message="You are a helpful AI assistant. You help to analyze reviews",
+                                        llm_config=llm_config,
+                                        max_consecutive_auto_reply=2)
     
     #############
     chat_results = user_proxy.initiate_chats([
@@ -127,24 +133,16 @@ def main(user_query: str):
                 "recipient": retrieve_reviews_agent,
                 "summary_method": "last_msg",
                 "max_turns": 2,
-            }                        
+            },
+            {
+                "message": review_analysis_message,
+                "recipient": reviews_analysis_agent,
+                "summary_method": "last_msg",
+                "max_turns": 2,
+            }                          
         ]                                         
     )
     print()
-    
-    # fetch_reviews_agent = ConversableAgent("fetch_reviews_agent", 
-    #                                     system_message=entrypoint_agent_system_message, 
-    #                                     is_termination_msg=check_task1_termination,
-    #                                     llm_config=llm_config, 
-    #                                     max_consecutive_auto_reply=2)
-    # fetch_reviews_agent.register_for_llm(name="fetch_restaurant_data", description="Fetches the reviews for a specific restaurant.")(fetch_restaurant_data)
-    # fetch_reviews_agent.register_for_execution(name="fetch_restaurant_data")(fetch_restaurant_data)
-    
-    
-    # review_analysis_agent = AssistantAgent("review_analysis_agent", 
-    #                                     system_message=review_analysis_system_message, 
-    #                                     llm_config=llm_config,
-    #                                     max_consecutive_auto_reply=2)
     
     # scoring_agent = AssistantAgent("scoring_agent", 
     #                                     system_message=None, 

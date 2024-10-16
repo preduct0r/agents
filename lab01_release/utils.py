@@ -1,24 +1,22 @@
-entrypoint_agent_system_message = "You are an agent who's purpose to retrieve all reviews about specific restaurant name you provided"
-
-review_analysis_system_message = """
+review_analysis_message = """
 Given a list of reviews your task is to extract two scores:
 ```
 - food_score: the quality of food at the restaurant. This will be a score from 1-5.
 - customer_service_score: the quality of customer service at the restaurant. This will be a score from 1-5.
 ```
-To make this scores look for keywords in the review. Each review has keyword adjectives that correspond to the score that the restaurant should get for its food_score and customer_service_score. Here are the keywords the agent should look out for:
+Make this scores look for keywords in the reviews. Each review has keyword adjectives that correspond to the score that the restaurant should get for its food_score and customer_service_score. Here are the keywords the agent should look out for:
 ```
-- Score 1/5 has one of these adjectives: awful, horrible, or disgusting.
-- Score 2/5 has one of these adjectives: bad, unpleasant, or offensive.
-- Score 3/5 has one of these adjectives: average, uninspiring, or forgettable.
-- Score 4/5 has one of these adjectives: good, enjoyable, or satisfying.
-- Score 5/5 has one of these adjectives: awesome, incredible, or amazing.
+- Score 1 has one of these adjectives: awful, horrible, or disgusting.
+- Score 2 has one of these adjectives: bad, unpleasant, or offensive.
+- Score 3 has one of these adjectives: average, uninspiring, or forgettable.
+- Score 4 has one of these adjectives: good, enjoyable, or satisfying.
+- Score 5 has one of these adjectives: awesome, incredible, or amazing.
 ```
-Each review will have exactly only two of these keywords (adjective describing food and adjective describing customer service), and the score (N/5) is only determined through the above listed keywords. No other factors go into score extraction.
+Each review will have exactly only two of these keywords (adjective describing food and adjective describing customer service), and the score N is only determined through the above listed keywords. No other factors go into score extraction.
 
 Return answer in format, like in this example
 ```
-{"Applebee's", [1, 2, 3, 4, 5], [1, 2, 3, 4, 5]}
+{"restaurant_name": "Applebee's", "food_scores": [1, 2, 3, 4, 5], "customer_service_scores": [1, 2, 3, 4, 5]}
 ```
 """
 
