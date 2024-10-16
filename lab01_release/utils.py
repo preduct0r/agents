@@ -16,9 +16,9 @@ To make this scores look for keywords in the review. Each review has keyword adj
 ```
 Each review will have exactly only two of these keywords (adjective describing food and adjective describing customer service), and the score (N/5) is only determined through the above listed keywords. No other factors go into score extraction.
 
-Return answer in this format
+Return answer in format, like in this example
 ```
-{"restaurant_name", [food_score for first review, food_score for second review, ...], [customer_service_score for first review, customer_service_score for second review, ...]}
+{"Applebee's", [1, 2, 3, 4, 5], [1, 2, 3, 4, 5]}
 ```
 """
 

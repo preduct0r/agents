@@ -6,6 +6,8 @@ import json
 import numpy as np
 from dotenv import load_dotenv
 
+import sys
+sys.path.append("/home/den/projects/LLM/llm_agents_course/labs")
 from lab01_release.utils import entrypoint_agent_system_message, review_analysis_system_message, get_review_dict
 
 # Load environment variables from .env file
@@ -70,7 +72,7 @@ def main(user_query: str):
                                         system_message=entrypoint_agent_system_message, 
                                         is_termination_msg=check_task1_termination,
                                         llm_config=llm_config, 
-                                        max_consecutive_auto_reply=5)
+                                        max_consecutive_auto_reply=2)
     entrypoint_agent.register_for_llm(name="fetch_restaurant_data", description="Fetches the reviews for a specific restaurant.")(fetch_restaurant_data)
     entrypoint_agent.register_for_execution(name="fetch_restaurant_data")(fetch_restaurant_data)
 
@@ -78,15 +80,15 @@ def main(user_query: str):
     review_analysis_agent = AssistantAgent("review_analysis_agent", 
                                         system_message=review_analysis_system_message, 
                                         llm_config=llm_config,
-                                        max_consecutive_auto_reply=5)
+                                        max_consecutive_auto_reply=2)
     
     scoring_agent = AssistantAgent("scoring_agent", 
                                         system_message=None, 
                                         llm_config=llm_config,
-                                        max_consecutive_auto_reply=5)
+                                        max_consecutive_auto_reply=2)
     
-    scoring_agent.register_for_llm(name="calculate_overall_score", description="Return overall score.")(fetch_restaurant_data)
-    scoring_agent.register_for_execution(name="calculate_overall_score")(fetch_restaurant_data)
+    scoring_agent.register_for_llm(name="calculate_overall_score", description="Return overall score.")(calculate_overall_score)
+    scoring_agent.register_for_execution(name="calculate_overall_score")(calculate_overall_score)
     # TODO
     # Fill in the argument to `initiate_chats` below, calling the correct agents sequentially.
     # If you decide to use another conversation pattern, feel free to disregard this code.
