@@ -58,14 +58,6 @@ def get_average_score(js: str):
 
 # TODO: feel free to write as many additional functions as you'd like.
 
-def check_json(data):
-    try:
-        json.loads(data)
-        return True
-    except:
-        return False
-    
-
 # Do not modify the signature of the "main" function.
 def main(user_query: str):
     # example LLM config for the entrypoint agent
