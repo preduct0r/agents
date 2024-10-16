@@ -1,10 +1,12 @@
 from typing import Dict, List
-from autogen import ConversableAgent, AssistantAgent, UserProxyAgent
 import sys
 import os
 import json
 import numpy as np
 from dotenv import load_dotenv
+
+from autogen import ConversableAgent, AssistantAgent, UserProxyAgent
+from autogen import register_function
 
 import sys
 sys.path.append("/home/den/projects/LLM/llm_agents_course/labs")
@@ -16,7 +18,6 @@ load_dotenv()
 # Accessing the variables
 openai_token = os.getenv('OPENAI_API_KEY')
 
-review_dict = get_review_dict
 
 def fetch_restaurant_data(restaurant_name: str) -> Dict[str, List[str]]:
     # TODO
@@ -26,7 +27,14 @@ def fetch_restaurant_data(restaurant_name: str) -> Dict[str, List[str]]:
     # Example:
     # > fetch_restaurant_data("Applebee's")
     # {"Applebee's": ["The food at Applebee's was average, with nothing particularly standing out.", ...]}
-    return review_dict[restaurant_name]
+    review_dict = get_review_dict()
+    print(restaurant_name.strip().lower())
+    
+    if restaurant_name.lower() in review_dict.keys():
+        return review_dict[restaurant_name.strip().lower()]
+    else:
+        raise ValueError("Invalid operator")
+    
 
 def check_task1_termination(message):
     if "content" in message:
@@ -63,6 +71,14 @@ def get_data_fetch_agent_prompt(restaurant_query: str) -> str:
 
 # TODO: feel free to write as many additional functions as you'd like.
 
+def check_json(data):
+    try:
+        json.loads(data)
+        return True
+    except:
+        return False
+    
+
 # Do not modify the signature of the "main" function.
 def main(user_query: str):
     # example LLM config for the entrypoint agent
@@ -70,28 +86,8 @@ def main(user_query: str):
     # the main entrypoint/supervisor agent
 
     # TODO
-    # user_agent = UserProxyAgent(
-    #     name="user", 
-    #     llm_config=False,
-    #     is_termination_msg=lambda msg: msg.get("content") is not None and "TERMINATE" in msg["content"],
-    #     human_input_mode="NEVER",)
-
-    # retrieve_name_agent = ConversableAgent(
-    #     name="get_name_agent",
-    #     system_message="You are a helpful AI assistant. You help to retrieve information from given query. Return 'TERMINATE' when the task is done.",
-    #     llm_config={"config_list": [{"model": "gpt-4", "api_key": os.environ["OPENAI_API_KEY"]}]},
-    # )
-    
-    # register_function(
-    #     calculator,
-    #     caller=retrieve_name_agent,  # The assistant agent can suggest calls to the calculator.
-    #     executor=user_agent,  # The user proxy agent can execute the calculator calls.
-    #     name="calculator",  # By default, the function name is used as the tool name.
-    #     description="A simple calculator",  # A description of the tool.
-    # )
-    
-    
-    user_agent = UserProxyAgent(
+    #############
+    user_proxy = UserProxyAgent(
         name="user", 
         llm_config=False,
         # is_termination_msg=lambda msg: msg.get("content") is not None and "TERMINATE" in msg["content"],
@@ -103,13 +99,35 @@ def main(user_query: str):
         llm_config=llm_config,
     )
     
-    chat_results = user_agent.initiate_chats([
+    #############
+    retrieve_reviews_agent = ConversableAgent(
+        name="get_reviews_agent",
+        system_message="You are a helpful AI assistant. You help with tool usage",
+        llm_config={"config_list": [{"model": "gpt-4", "api_key": os.environ["OPENAI_API_KEY"]}]},
+    )
+    
+    register_function(
+        fetch_restaurant_data,
+        caller=retrieve_reviews_agent,  # The assistant agent can suggest calls to the calculator.
+        executor=user_proxy,  # The user proxy agent can execute the calculator calls.
+        name="retrieval",  # By default, the function name is used as the tool name.
+        description="get data from dictionary",  # A description of the tool.
+    )
+    
+    #############
+    chat_results = user_proxy.initiate_chats([
             {
                 "message": f"Return restaurant name from given query. **Query**: ```{user_query}```\n You must return only name, nothing else",
                 "recipient": retrieve_name_agent,
                 "summary_method": "last_msg",
                 "max_turns": 1,
-            }                                
+            },            
+            {
+                "message": f"Get all reviews for given restaurant name",
+                "recipient": retrieve_reviews_agent,
+                "summary_method": "last_msg",
+                "max_turns": 2,
+            }                        
         ]                                         
     )
     print()
