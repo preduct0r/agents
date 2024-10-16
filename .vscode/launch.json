@@ -11,8 +11,8 @@
             "program": "lab01_release/main.py",
             "console": "integratedTerminal",
             "args": [
-                // "How good is Subway as a restaurant?"
-                "What would you rate In N Out?"
+                "How good is Subway as a restaurant?"
+                // "What would you rate In N Out?"
             ]
         }
     ]

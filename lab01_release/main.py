@@ -1,5 +1,5 @@
 from typing import Dict, List
-from autogen import ConversableAgent, AssistantAgent
+from autogen import ConversableAgent, AssistantAgent, UserProxyAgent
 import sys
 import os
 import json
@@ -68,48 +68,103 @@ def main(user_query: str):
     # example LLM config for the entrypoint agent
     llm_config = {"config_list": [{"model": "gpt-4o-mini", "api_key": os.environ.get("OPENAI_API_KEY")}]}
     # the main entrypoint/supervisor agent
-    entrypoint_agent = ConversableAgent("entrypoint_agent", 
-                                        system_message=entrypoint_agent_system_message, 
-                                        is_termination_msg=check_task1_termination,
-                                        llm_config=llm_config, 
-                                        max_consecutive_auto_reply=2)
-    entrypoint_agent.register_for_llm(name="fetch_restaurant_data", description="Fetches the reviews for a specific restaurant.")(fetch_restaurant_data)
-    entrypoint_agent.register_for_execution(name="fetch_restaurant_data")(fetch_restaurant_data)
 
     # TODO
-    review_analysis_agent = AssistantAgent("review_analysis_agent", 
-                                        system_message=review_analysis_system_message, 
-                                        llm_config=llm_config,
-                                        max_consecutive_auto_reply=2)
+    # user_agent = UserProxyAgent(
+    #     name="user", 
+    #     llm_config=False,
+    #     is_termination_msg=lambda msg: msg.get("content") is not None and "TERMINATE" in msg["content"],
+    #     human_input_mode="NEVER",)
+
+    # retrieve_name_agent = ConversableAgent(
+    #     name="get_name_agent",
+    #     system_message="You are a helpful AI assistant. You help to retrieve information from given query. Return 'TERMINATE' when the task is done.",
+    #     llm_config={"config_list": [{"model": "gpt-4", "api_key": os.environ["OPENAI_API_KEY"]}]},
+    # )
     
-    scoring_agent = AssistantAgent("scoring_agent", 
-                                        system_message=None, 
-                                        llm_config=llm_config,
-                                        max_consecutive_auto_reply=2)
+    # register_function(
+    #     calculator,
+    #     caller=retrieve_name_agent,  # The assistant agent can suggest calls to the calculator.
+    #     executor=user_agent,  # The user proxy agent can execute the calculator calls.
+    #     name="calculator",  # By default, the function name is used as the tool name.
+    #     description="A simple calculator",  # A description of the tool.
+    # )
     
-    scoring_agent.register_for_llm(name="calculate_overall_score", description="Return overall score.")(calculate_overall_score)
-    scoring_agent.register_for_execution(name="calculate_overall_score")(calculate_overall_score)
+    
+    user_agent = UserProxyAgent(
+        name="user", 
+        llm_config=False,
+        # is_termination_msg=lambda msg: msg.get("content") is not None and "TERMINATE" in msg["content"],
+        human_input_mode="NEVER",
+    )
+    retrieve_name_agent = ConversableAgent(
+        name="get_name_agent",
+        system_message="You are a helpful AI assistant. You help to retrieve necessary information from given query",
+        llm_config=llm_config,
+    )
+    
+    chat_results = user_agent.initiate_chats([
+            {
+                "message": f"Return restaurant name from given query. **Query**: ```{user_query}```\n You must return only name, nothing else",
+                "recipient": retrieve_name_agent,
+                "summary_method": "last_msg",
+                "max_turns": 1,
+            }                                
+        ]                                         
+    )
+    print()
+    
+    # fetch_reviews_agent = ConversableAgent("fetch_reviews_agent", 
+    #                                     system_message=entrypoint_agent_system_message, 
+    #                                     is_termination_msg=check_task1_termination,
+    #                                     llm_config=llm_config, 
+    #                                     max_consecutive_auto_reply=2)
+    # fetch_reviews_agent.register_for_llm(name="fetch_restaurant_data", description="Fetches the reviews for a specific restaurant.")(fetch_restaurant_data)
+    # fetch_reviews_agent.register_for_execution(name="fetch_restaurant_data")(fetch_restaurant_data)
+    
+    
+    # review_analysis_agent = AssistantAgent("review_analysis_agent", 
+    #                                     system_message=review_analysis_system_message, 
+    #                                     llm_config=llm_config,
+    #                                     max_consecutive_auto_reply=2)
+    
+    # scoring_agent = AssistantAgent("scoring_agent", 
+    #                                     system_message=None, 
+    #                                     llm_config=llm_config,
+    #                                     max_consecutive_auto_reply=2)
+    
+    # scoring_agent.register_for_llm(name="calculate_overall_score", description="Return overall score.")(calculate_overall_score)
+    # scoring_agent.register_for_execution(name="calculate_overall_score")(calculate_overall_score)
+    
+    
+    
     # TODO
     # Fill in the argument to `initiate_chats` below, calling the correct agents sequentially.
     # If you decide to use another conversation pattern, feel free to disregard this code.
     
     # Uncomment once you initiate the chat with at least one agent.
-    chat_results = entrypoint_agent.initiate_chats(
-        [
-            {
-                "recipient": review_analysis_agent,
-                "message": "",
-                "max_turns": 3,
-                "summary_method": "reflection_with_llm",
-            },
-            {
-                "recipient": scoring_agent,
-                "message": "",
-                "max_turns": 3,
-                "summary_method": "last_msg",
-            },
-        ]
-    )
+    # chat_results = retrieve_name_agent.initiate_chats(
+    #     [
+    #         {
+    #             "recipient": fetch_reviews_agent,
+    #             "message": "Return a name of restaurant from query in lowercase",
+    #             "max_turns": 3,
+    #             "summary_method": "last_msg",
+    #         },
+    #         {
+    #             "recipient": review_analysis_agent,
+    #             "message": "Return a list of reviews for a this restaurant",
+    #             "max_turns": 3,
+    #             "summary_method": "reflection_with_llm",
+    #         },
+            # {
+            #     "recipient": scoring_agent,
+            #     "message": "Make an average score",
+            #     "max_turns": 3,
+            #     "summary_method": "last_msg",
+            # },
+    #     ]
+    # )
     
     
 # DO NOT modify this code below.
