@@ -51,7 +51,7 @@ part4 = autogen.AssistantAgent(
     system_message="You are a neural network training specialist from openai",
     llm_config=llm_config,
 )
-groupchat = autogen.GroupChat(agents=[part1, part2, part3, part4], messages=[], send_introductions=True, max_round=50)
+groupchat = autogen.GroupChat(agents=[part1, part2, part3, part4], messages=[], send_introductions=False, max_round=25)
 manager = autogen.GroupChatManager(groupchat=groupchat, llm_config=llm_manager_config)
 
 ##############
@@ -66,5 +66,5 @@ with open(f"standup/results/{dt}.txt", "w") as f:
     sys.stdout = f
     ########### 
     part1.initiate_chat(
-        manager, message="Write jokes about artificial intelligence for stand up concert. Decide in discussion which one of them is good enough"
+        manager, message="Lets write a jokes about artificial intelligence for stand up concert. We should decide in discussion which one of them is good enough"
     )
